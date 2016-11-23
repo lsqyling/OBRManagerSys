@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.baustem.obrmanager.mapper.ProductMapper">
+
+	<update id="updateUrl">
+		UPDATE products SET url=#{url}
+		WHERE name = #{name}
+	</update>
+
+	<select id="getProductByName" resultMap="bndMapName">
+		SELECT p.id,p.service_id,p.`name`,p.description,p.url,p.repo_xml,
+		b.id AS "b_id",b.`res_id` AS "b_res_id",b.`presentation_name` AS "b_presentation_name",b.`symbolic_name` AS "b_symbolic_name",b.`size` AS "b_size",
+		b.`xml_content` AS "b_xml_content"
+		FROM products p
+		LEFT OUTER JOIN bnd_products bp
+		ON p.id = bp.`product_id`
+		LEFT OUTER JOIN bundles b
+		ON b.id = bp.`bnd_id`
+		WHERE p.name = #{productName}
+	</select>
+	
+	<resultMap type="com.baustem.obrmanager.entity.Product" id="bndMapName">
+		<id column="id" property="id"/>
+		<result column="service_id" property="serviceId"/>
+		<result column="name" property="name"/>
+		<result column="url" property="url"/>
+		<result column="description" property="description"/>
+		<result column="repo_xml" property="repoXml"/>
+		
+		<collection property="bundles" ofType="com.baustem.obrmanager.entity.Bundle" columnPrefix="b_">
+			<id column="id" property="id"/>
+			<result column="res_id" property="resId"/>
+			<result column="presentation_name" property="presentationName"/>
+			<result column="symbolic_name" property="symbolicName"/>
+			<result column="size" property="size"/>
+			<result column="xml_content" property="xmlContent"/>
+		</collection>
+		
+	</resultMap>
+	
+	<delete id="deleteProduct">
+		DELETE FROM products WHERE id = #{id}
+	</delete>
+
+	<update id="updateRepoXml">
+		UPDATE products SET repo_xml=#{repoXml}
+		WHERE id = #{id}
+	</update>
+
+	<delete id="clearRelated">
+		DELETE FROM  bnd_products WHERE product_id=#{id}
+	</delete>
+	
+	<insert id="insertRelated">
+		INSERT INTO bnd_products(product_id,bnd_id)
+		VALUES(#{productId},#{bndId})
+	</insert>
+
+	<select id="getProductById" resultMap="bndMap">
+		SELECT p.id,p.service_id,p.`name`,p.description,p.repo_xml,
+		b.id AS "b_id",b.`res_id` AS "b_res_id",b.`presentation_name` AS "b_presentation_name",b.`symbolic_name` AS "b_symbolic_name",b.`size` AS "b_size",
+		b.`xml_content` AS "b_xml_content"
+		FROM products p
+		LEFT OUTER JOIN bnd_products bp
+		ON p.id = bp.`product_id`
+		LEFT OUTER JOIN bundles b
+		ON b.id = bp.`bnd_id`
+		WHERE p.id = #{id}
+	</select>
+	
+	<resultMap type="com.baustem.obrmanager.entity.Product" id="bndMap">
+		<id column="id" property="id"/>
+		<result column="service_id" property="serviceId"/>
+		<result column="name" property="name"/>
+		<result column="description" property="description"/>
+		<result column="repo_xml" property="repoXml"/>
+		
+		<collection property="bundles" ofType="com.baustem.obrmanager.entity.Bundle" columnPrefix="b_">
+			<id column="id" property="id"/>
+			<result column="res_id" property="resId"/>
+			<result column="presentation_name" property="presentationName"/>
+			<result column="symbolic_name" property="symbolicName"/>
+			<result column="size" property="size"/>
+			<result column="xml_content" property="xmlContent"/>
+		</collection>
+		
+	</resultMap>
+	
+
+	<insert id="save">
+		INSERT INTO products(service_id,`name`,description)
+		VALUES(#{serviceId},#{name},#{description})
+	</insert>
+
+	<select id="getTotalCount" resultType="long">
+		SELECT COUNT(id) FROM products 
+		<include refid="condition"></include>
+	</select>
+	
+	<select id="getListProduct" resultType="com.baustem.obrmanager.entity.Product">
+		SELECT id,service_id,`name`,description,repo_xml
+		FROM products
+		<include refid="condition"></include>
+		LIMIT #{firstIndex},#{items}
+	</select>
+	
+	<sql id="condition">
+		<where>
+			<if test="name!=null">
+				AND `name` LIKE #{name}
+			</if>
+		</where>
+	</sql>
+
+</mapper>

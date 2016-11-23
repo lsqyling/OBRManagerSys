@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.baustem.obrmanager.mapper.RoleMapper">
+
+	<select id="getAllRoles" resultType="com.baustem.obrmanager.entity.Role">
+		SELECT id, description, enabled, `name` FROM roles
+	</select>
+
+	<delete id="deleteRoles">
+		DELETE FROM roles WHERE id = #{id}
+	</delete>
+	
+	<insert id="create">
+		INSERT INTO roles(`name`,description,enabled)
+		VALUES(#{name},#{description},#{enabled});
+	
+	</insert>
+	
+	<insert id="save">
+		INSERT INTO role_authority(role_id,authority_id) VALUES(#{roleId},#{authId})
+	</insert>
+
+	<delete id="delete">
+		DELETE FROM role_authority WHERE role_id = #{id}
+	</delete>
+
+	<select id="getTotalRecord" resultType="long">
+		SELECT COUNT(id) FROM
+		roles
+	</select>
+
+	<select id="getList" resultType="com.baustem.obrmanager.entity.Role">
+		SELECT id, description, enabled,
+		`name`
+		FROM roles LIMIT #{firstIndex},#{items}
+	</select>
+	
+	<select id="getAllAuths" resultMap="subMap">
+		SELECT p.id, p.name, p.display_name, p.url,
+		s.id AS "s_id", s.name AS "s_name", s.display_name AS "s_display_name", s.url AS "s_url"
+		FROM authorities p
+		LEFT OUTER JOIN authorities s
+		ON p.id = s.parent_authority_id
+		WHERE p.id IN (
+	       			SELECT DISTINCT parent_authority_id 
+	       			FROM authorities 
+	       			WHERE parent_authority_id IS NOT NULL
+	            )
+	</select>
+	
+		
+	<resultMap type="com.baustem.obrmanager.entity.Authority" id="subMap">
+		<id column="id" property="id"/>
+		<result column="name" property="name"/>
+		<result column="display_name" property="displayName"/>
+		<result column="url" property="url"/>
+		
+		<collection property="subAuthorities" ofType="com.baustem.obrmanager.entity.Authority" columnPrefix="s_">
+			<id column="id" property="id"/>
+			<result column="name" property="name"/>
+			<result column="display_name" property="displayName"/>
+			<result column="url" property="url"/>
+		</collection>
+	</resultMap>
+
+	<select id="getRoleById" resultMap="authMap">
+		SELECT r.id, r.description, r.enabled, r.name, 
+		a.id AS "a_id", a.display_name AS "a_display_name", a.url AS "a_url", a.parent_authority_id AS "a_parent_authority_id"
+		FROM roles r
+		LEFT OUTER JOIN role_authority ra
+		ON r.id = ra.role_id
+		LEFT OUTER JOIN authorities a
+		ON a.id = ra.authority_id
+		WHERE r.id = #{id}
+	</select>
+
+	<resultMap type="com.baustem.obrmanager.entity.Role" id="authMap">
+		<id column="id" property="id" />
+		<result column="description" property="description" />
+		<result column="enabled" property="enabled" />
+		<result column="name" property="name" />
+
+		<collection property="authorities" ofType="com.baustem.obrmanager.entity.Authority" columnPrefix="a_">
+			<id column="id" property="id" />
+			<result column="display_name" property="displayName" />
+			<result column="url" property="url" />
+			<result column="parent_authority_id" property="parentAuthority.id" />
+		</collection>
+	</resultMap>
+
+
+</mapper>

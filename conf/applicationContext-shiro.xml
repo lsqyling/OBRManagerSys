@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+
+	<bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+		<property name="cacheManagerConfigFile" value="classpath:ehcache-shiro.xml"></property>	
+	</bean>
+	
+	<bean id="shiroRealm" class="com.baustem.obrmanager.shiro.ShiroRealm"></bean>
+	
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="cacheManager" ref="cacheManager"></property>
+		<property name="realm" ref="shiroRealm"></property>
+	</bean>
+
+	<bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor"></bean>
+	
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		<property name="securityManager" ref="securityManager"></property>
+		<property name="loginUrl" value="/index"></property>
+		<property name="unauthorizedUrl" value="/unauthorized"></property>
+		<property name="filterChainDefinitions">
+			<value>
+				/static/** = anon
+	        	/images/** = anon
+	        	/store/** = anon
+	        	/index = anon
+	        	/user/login = anon
+	        	/logout = logout
+	        	/user/menus = authc
+	        	
+	        	/role/** = roles[role]
+				/user/** = roles[user]
+				
+	        	/**= authc
+			</value>
+		</property>
+	</bean>
+	
+
+
+</beans>

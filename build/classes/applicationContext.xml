@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+	
+	<context:component-scan base-package="com.baustem.obrmanager">
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+		<context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice"/>
+	</context:component-scan>
+	
+	<context:property-placeholder location="classpath:jdbc.properties"/>	
+	
+	<bean id="dataSourceTemplate" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="user" value="${jdbc.user}"></property>
+		<property name="password" value="${jdbc.password}"></property>
+		<property name="driverClass" value="${jdbc.driver}"></property>
+	</bean>
+	
+	<bean id="dataSourceMain" parent="dataSourceTemplate">
+		<property name="jdbcUrl" value="${jdbc.url}"></property>
+	</bean>
+	
+	<bean id="dataSourceLog" parent="dataSourceTemplate">
+		<property name="jdbcUrl" value="${log.url}"></property>
+	</bean>
+	
+	<bean id="obrRouter" class="com.baustem.obrmanager.router.OBRRouter">
+		<property name="targetDataSources">
+			<map>
+				<entry key="normal" value-ref="dataSourceMain"></entry>
+				<entry key="log" value-ref="dataSourceLog"></entry>
+			</map>
+		</property>
+		<property name="defaultTargetDataSource" ref="dataSourceMain"></property>
+	</bean>
+	
+	
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="obrRouter"></property>
+		<property name="configLocation" value="classpath:mybatis-config.xml"></property>
+	</bean>
+	
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="obrRouter"></property>
+	</bean>
+	
+	<aop:config>
+		<aop:aspect ref="logAspect" order="1">
+			<aop:pointcut expression="(execution(* *..*Service.update*(..))  ||
+										execution(* *..*Service.delete*(..))  ||
+										execution(* *..*Service.save*(..))    ||
+										execution(* *..*Service.get*(..))  ||
+										execution(* *..*Service.batch*(..))   ||
+										execution(* *..*Service.generate*(..))) and !bean(logService)" id="logPointCut"/>
+			<aop:around method="recordLog" pointcut-ref="logPointCut" />
+		</aop:aspect>
+	
+	</aop:config>
+	
+	<bean id="jobDetailBean" class="org.springframework.scheduling.quartz.JobDetailBean">
+		<property name="jobClass" value="com.baustem.obrmanager.schedule.LogScheduler"></property>
+		<property name="jobDataMap">
+			<map>
+				<entry key="logService" value-ref="logService"></entry>
+			</map>
+		</property>
+	</bean>
+	
+	<bean id="logTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="jobDetailBean"></property>
+		<property name="cronExpression" value="0 0 0 15 * ?"></property>
+	</bean>
+	
+	<bean id="schedulerFactoryBean" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<ref bean="logTrigger"/>
+			</list>
+		</property>
+	</bean>
+	
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage"  value="com.baustem.obrmanager"></property>
+	</bean>
+	
+	
+	<tx:annotation-driven/>
+	
+	
+
+</beans>

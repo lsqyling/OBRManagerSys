@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.baustem.obrmanager.mapper.BundleMapper">
+
+	<select id="getRelations" resultType="int">
+		SELECT product_id  FROM bnd_products  WHERE bnd_id=#{id}
+	</select>
+	
+	<delete id="batchDeleteBnds" parameterType="java.util.List">
+		DELETE FROM bundles WHERE res_id IN
+		<foreach collection="list" index="index" item="bnd" open="(" separator="," close=")">   
+        	#{bnd.resId}   
+    	</foreach>  
+	</delete>
+	
+	<select id="getAllBundles" resultType="com.baustem.obrmanager.entity.Bundle">
+		SELECT id,res_id,presentation_name,symbolic_name,uri,`version`
+		,size,xml_content FROM bundles
+	</select>
+	
+	<select id="getBndById" resultType="com.baustem.obrmanager.entity.Bundle">
+		SELECT id,res_id,presentation_name,symbolic_name,uri,`version`
+		,size FROM bundles where id = #{id}
+	</select>
+
+	<select id="getTotalCount" resultType="long">
+		SELECT COUNT(id) FROM bundles 
+		<include refid="totalCondition"/>
+	</select>
+	
+	<select id="getBndList" resultType="com.baustem.obrmanager.entity.Bundle">
+		SELECT id,res_id,presentation_name,symbolic_name,uri,`version`
+		,size FROM bundles
+		<include refid="bndListCondition"></include>
+	</select>
+	
+	<sql id="bndListCondition">
+		<include refid="totalCondition"/>
+		LIMIT #{firstIndex},#{items}
+	</sql>
+	<sql id="totalCondition">
+		<where>
+			<if test="symbolicName!=null and symbolicName !=''">
+				and symbolic_name like #{symbolicName}
+			</if>
+		</where>
+	</sql>
+	
+	<insert id="batchSave" parameterType="java.util.List">
+		INSERT INTO bundles(res_id,presentation_name,symbolic_name,uri,`version`,size,xml_content)
+		VALUES
+		<foreach collection="list" item="bnd" index="index" separator=",">
+			(#{bnd.resId},#{bnd.presentationName},#{bnd.symbolicName},#{bnd.uri},#{bnd.version},#{bnd.size},#{bnd.xmlContent})
+		</foreach>
+	</insert>
+	<delete id="clearRelates">
+		DELETE FROM bnd_products
+	</delete>
+	<delete id="clearBundles">
+		DELETE FROM bundles
+	</delete>
+
+</mapper>

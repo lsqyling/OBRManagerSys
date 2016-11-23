@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.baustem.obrmanager.mapper.LogMapper">
+
+	<select id="getLogs" resultType="com.baustem.obrmanager.entity.Log">
+		SELECT id, operator,method_name,
+		class_name,args,operate_result,
+		return_value,operate_time,
+		error_message 
+		FROM ${tableName}
+		LIMIT #{firstIndex},#{items}
+	</select>
+
+	<update id="createTable" parameterType="java.lang.String">
+		CREATE TABLE IF NOT EXISTS ${tableName}(
+		id INT(11) PRIMARY KEY NOT NULL AUTO_INCREMENT,
+		operator MEDIUMTEXT,
+		method_name MEDIUMTEXT,
+		class_name MEDIUMTEXT,
+		args MEDIUMTEXT,
+		operate_result MEDIUMTEXT,
+		return_value MEDIUMTEXT,
+		operate_time MEDIUMTEXT,
+		error_message MEDIUMTEXT) ENGINE=INNODB DEFAULT CHARSET=utf8
+	</update>
+	
+	<insert id="saveLog">
+		INSERT INTO ${tableName}(
+		operator,
+		method_name,
+		class_name,
+		args,
+		operate_result,
+		return_value,
+		operate_time,
+		error_message) VALUES(
+		#{operator},
+		#{methodName},
+		#{className},#{args},
+		#{operateResult},#{returnValue},
+		#{operateTime},#{errorMessage})
+	</insert>
+	
+	<select id="getAllTableNames" resultType="java.lang.String">
+		SELECT table_name 
+		FROM information_schema.tables 
+		WHERE table_schema='obr_log' AND table_name LIKE 'logs_%'
+	</select>
+	
+	<select id="getSubRecord" resultType="long">
+		select count(id) from ${subT} as log_union
+	</select>
+	
+
+</mapper>
